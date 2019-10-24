@@ -13,11 +13,28 @@ from dtw import *
 
 
 class Application:
-    # variables used to draw figures
+    # arrays used to draw figures (First number)
     x = []
     y = []
+    # velocity of the first number: x', y'
+    x_velocity = []
+    y_velocity = []
+    # acceleration of the first number: x'', y''
+    x_acceleration = []
+    y_acceleration = []
+    # multi dimensional time series
+    series1 = []
+    series2 = []
+    # arrays used to compare two number
     compare_x = []
     compare_y = []
+    # compared x' and y' array
+    compare_x_velocity = []
+    compare_y_velocity = []
+    # compared x'' and y'' array
+    compare_x_acceleration = []
+    compare_y_acceleration = []
+
     number_of_events = []
     compare_number_of_events = []
     # main window variable
@@ -236,6 +253,7 @@ class Application:
                 self.y.append(int(line.split()[1]))
         # close file
         file_handler.close()
+        self.calculate_time_series()
 
     def compare_read_file(self):
         # open file for read
@@ -253,10 +271,75 @@ class Application:
                 self.compare_y.append(int(line.split()[1]))
         # close file
         file_handler.close()
+        self.compare_calculate_time_series()
 
-    def dtw_calculation(self):
-        euclidean_norm = lambda x, y: np.abs(x - y)
-        d, cost_matrix, acc_cost_matrix, path = dtw(self.x, self.y, dist=euclidean_norm)
+    def calculate_time_series(self):
+        t = 1
+        self.x_velocity.append(0)
+        while t < len(self.x):
+            self.x_velocity.append(self.x[t] - self.x[t-1])
+            t += 1
+
+        t = 1
+        self.y_velocity.append(0)
+        while t < len(self.y):
+            self.y_velocity.append(self.y[t] - self.y[t - 1])
+            t += 1
+
+        t = 2
+        self.x_acceleration.append(0)
+        self.x_acceleration.append(0)
+        while t < len(self.x_velocity):
+            self.x_acceleration.append(self.x_velocity[t] - self.x_velocity[t - 1])
+            t += 1
+
+        t = 2
+        self.y_acceleration.append(0)
+        self.y_acceleration.append(0)
+        while t < len(self.y_velocity):
+            self.y_acceleration.append(self.y_velocity[t] - self.y_velocity[t - 1])
+            t += 1
+
+        self.series1.append(self.x)
+        self.series1.append(self.x_velocity)
+        self.series1.append(self.x_acceleration)
+        self.series1.append(self.y)
+        self.series1.append(self.y_velocity)
+        self.series1.append(self.y_acceleration)
+
+    def compare_calculate_time_series(self):
+        t = 1
+        self.compare_x_velocity.append(0)
+        while t < len(self.compare_x):
+            self.compare_x_velocity.append(self.compare_x[t] - self.compare_x[t-1])
+            t += 1
+
+        t = 1
+        self.compare_y_velocity.append(0)
+        while t < len(self.compare_y):
+            self.compare_y_velocity.append(self.compare_y[t] - self.compare_y[t - 1])
+            t += 1
+
+        t = 2
+        self.compare_x_acceleration.append(0)
+        self.compare_x_acceleration.append(0)
+        while t < len(self.compare_x_velocity):
+            self.compare_x_acceleration.append(self.compare_x_velocity[t] - self.compare_x_velocity[t - 1])
+            t += 1
+
+        t = 2
+        self.compare_y_acceleration.append(0)
+        self.compare_y_acceleration.append(0)
+        while t < len(self.compare_y_velocity):
+            self.compare_y_acceleration.append(self.compare_y_velocity[t] - self.compare_y_velocity[t - 1])
+            t += 1
+
+        self.series2.append(self.compare_x)
+        self.series2.append(self.compare_x_velocity)
+        self.series2.append(self.compare_x_acceleration)
+        self.series2.append(self.compare_y)
+        self.series2.append(self.compare_y_velocity)
+        self.series2.append(self.compare_y_acceleration)
 
 
 if __name__ == '__main__':
