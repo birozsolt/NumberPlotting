@@ -1,76 +1,77 @@
 # package used for reading files
+# packages used for dynamic time warping calculations
+import math
 import os
 # package used for building user interface
 import tkinter as tk
 from tkinter import *
+
 # packages used for plotting figures
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# packages used for dynamic time warping calculations
 import numpy as np
-import dtw as dtw
-from dtw import *
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
-class Application:
-    # arrays used to draw figures (First number)
-    x = []
-    y = []
-    # velocity of the first number: x', y'
-    x_velocity = []
-    y_velocity = []
-    # acceleration of the first number: x'', y''
-    x_acceleration = []
-    y_acceleration = []
-    # multi dimensional time series
-    series1 = []
-    series2 = []
-    # arrays used to compare two number
-    compare_x = []
-    compare_y = []
-    # compared x' and y' array
-    compare_x_velocity = []
-    compare_y_velocity = []
-    # compared x'' and y'' array
-    compare_x_acceleration = []
-    compare_y_acceleration = []
-
-    number_of_events = []
-    compare_number_of_events = []
-    # main window variable
-    window = tk.Tk()
-    # labels and drop down lists frame
-    mainframe = Frame(window)
-    # graph variables
-    figure = plt.Figure(figsize=(4, 2), dpi=100)
-    ax = figure.add_subplot(111)
-    graph_x = FigureCanvasTkAgg(figure, window)
-    graph_y = FigureCanvasTkAgg(figure, window)
-    graph_number = FigureCanvasTkAgg(figure, window)
-    # tkinter variables
-    folder_name = StringVar(mainframe)
-    session_name = StringVar(mainframe)
-    file_name = StringVar(mainframe)
-    compare_folder_name = StringVar(mainframe)
-    compare_session_name = StringVar(mainframe)
-    compare_file_name = StringVar(mainframe)
-    # the list of options
-    folder_list = os.listdir('e-BioDigit_DB/')
-    folder_list.sort()
-    compare_folder_list = os.listdir('e-BioDigit_DB/')
-    compare_folder_list.sort()
-    session_list = os.listdir('e-BioDigit_DB/' + folder_list[0])
-    session_list.sort()
-    compare_session_list = os.listdir('e-BioDigit_DB/' + compare_folder_list[0])
-    compare_session_list.sort()
-    number_list = os.listdir('e-BioDigit_DB/' + folder_list[0] + '/' + session_list[0])
-    number_list.sort()
-    compare_number_list = os.listdir('e-BioDigit_DB/' + compare_folder_list[0] + '/' + compare_session_list[0])
-    compare_number_list.sort()
-    popup_menu = OptionMenu(mainframe, file_name, *number_list)
-    compare_popup_menu = OptionMenu(mainframe, compare_file_name, *compare_number_list)
-
+class Application(object):
     def __init__(self):
+        # arrays used to draw figures (First number)
+        self.x = []
+        self.y = []
+        # velocity of the first number: x', y'
+        self.x_velocity = []
+        self.y_velocity = []
+        # acceleration of the first number: x'', y''
+        self.x_acceleration = []
+        self.y_acceleration = []
+        # multi dimensional time series
+        self.series1 = []
+        self.series2 = []
+        # arrays used to compare two number
+        self.compare_x = []
+        self.compare_y = []
+        # compared x' and y' array
+        self.compare_x_velocity = []
+        self.compare_y_velocity = []
+        # compared x'' and y'' array
+        self.compare_x_acceleration = []
+        self.compare_y_acceleration = []
+
+        self.number_of_events = []
+        self.compare_number_of_events = []
+        # main window variable
+        self.window = tk.Tk()
+        # labels and drop down lists frame
+        self.mainframe = Frame(self.window)
+        # graph variables
+        self.figure = plt.Figure(figsize=(4, 2), dpi=100)
+        self.ax = self.figure.add_subplot(111)
+        self.graph_x = FigureCanvasTkAgg(self.figure, self.window)
+        self.graph_y = FigureCanvasTkAgg(self.figure, self.window)
+        self.graph_number = FigureCanvasTkAgg(self.figure, self.window)
+        # tkinter variables
+        self.folder_name = StringVar(self.mainframe)
+        self.session_name = StringVar(self.mainframe)
+        self.file_name = StringVar(self.mainframe)
+        self.compare_folder_name = StringVar(self.mainframe)
+        self.compare_session_name = StringVar(self.mainframe)
+        self.compare_file_name = StringVar(self.mainframe)
+        # the list of options
+        self.folder_list = os.listdir('e-BioDigit_DB/')
+        self.folder_list.sort()
+        self.compare_folder_list = os.listdir('e-BioDigit_DB/')
+        self.compare_folder_list.sort()
+        self.session_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0])
+        self.session_list.sort()
+        self.compare_session_list = os.listdir('e-BioDigit_DB/' + self.compare_folder_list[0])
+        self.compare_session_list.sort()
+        self.number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0])
+        self.number_list.sort()
+        self.compare_number_list = os.listdir(
+            'e-BioDigit_DB/' + self.compare_folder_list[0] + '/' + self.compare_session_list[0])
+        self.compare_number_list.sort()
+        self.popup_menu = OptionMenu(self.mainframe, self.file_name, *self.number_list)
+        self.compare_popup_menu = OptionMenu(self.mainframe, self.compare_file_name, *self.compare_number_list)
+
         # set the main window title and size
         self.window.title("Number Representation")
         self.window.geometry('690x840')
@@ -100,20 +101,20 @@ class Application:
         # Popup Menu1
         Label(self.mainframe, text="Choose a File:", fg='white', bg='black').grid(row=1, column=1)
         popup_menu1 = OptionMenu(self.mainframe, self.folder_name, *self.folder_list)
-        popup_menu1.config(background='black', width=5)
+        popup_menu1.config(background='black', width=6)
         popup_menu1.grid(row=1, column=2)
         # set default option
         self.session_name.set(self.session_list[0])
         # Popup Menu2
         Label(self.mainframe, text="a Session:", fg='white', bg='black').grid(row=1, column=3)
         popup_menu2 = OptionMenu(self.mainframe, self.session_name, *self.session_list)
-        popup_menu2.config(background='black', width=9)
+        popup_menu2.config(background='black', width=10)
         popup_menu2.grid(row=1, column=4)
         # set default option
         self.file_name.set(self.number_list[0])
         # Popup Menu3
         Label(self.mainframe, text="Draw Number:", fg='white', bg='black').grid(row=1, column=5)
-        self.popup_menu.config(background='black', width=17)
+        self.popup_menu.config(background='black', width=18)
         self.popup_menu.grid(row=1, column=6)
         self.draw_figures()
 
@@ -123,20 +124,20 @@ class Application:
         Label(self.mainframe, text="Choose a File:", fg='white', bg='black').grid(row=2, column=1)
         # Popup Menu1
         popup_menu1 = OptionMenu(self.mainframe, self.compare_folder_name, *self.compare_folder_list)
-        popup_menu1.config(background='black', width=5)
+        popup_menu1.config(background='black', width=6)
         popup_menu1.grid(row=2, column=2)
         # set default option
         self.compare_session_name.set(self.compare_session_list[0])
         # Popup Menu2
         Label(self.mainframe, text="a Session:", fg='white', bg='black').grid(row=2, column=3)
         popup_menu2 = OptionMenu(self.mainframe, self.compare_session_name, *self.compare_session_list)
-        popup_menu2.config(background='black', width=9)
+        popup_menu2.config(background='black', width=10)
         popup_menu2.grid(row=2, column=4)
         # set default option
         self.compare_file_name.set(self.compare_number_list[0])
         # Popup Menu3
         Label(self.mainframe, text="Compare to:", fg='white', bg='black').grid(row=2, column=5)
-        self.compare_popup_menu.config(background='black', width=17)
+        self.compare_popup_menu.config(background='black', width=18)
         self.compare_popup_menu.grid(row=2, column=6)
 
     # on folder popup_menu value change
@@ -168,6 +169,7 @@ class Application:
     def compare_txt_file_changed(self, *args):
         self.compare_file_name.set(self.compare_file_name.get())
         self.compare_read_file()
+        self.manual_dtw_calculation()
 
     # refresh the option menu, with file name
     def refresh_file_name_option_menu(self):
@@ -183,13 +185,15 @@ class Application:
     # refresh the option menu, with file name
     def compare_refresh_file_name_option_menu(self):
         # reload file list
-        self.compare_number_list = os.listdir('e-BioDigit_DB/' + self.compare_folder_name.get() + '/' + self.compare_session_name.get())
+        self.compare_number_list = os.listdir(
+            'e-BioDigit_DB/' + self.compare_folder_name.get() + '/' + self.compare_session_name.get())
         self.compare_number_list.sort()
         self.compare_file_name.set(self.compare_number_list[0])
         # refresh options
         self.compare_popup_menu["menu"].delete(0, "end")
         for number in self.compare_number_list:
-            self.compare_popup_menu["menu"].add_command(label=number, command=lambda value=number: self.compare_file_name.set(value))
+            self.compare_popup_menu["menu"].add_command(label=number,
+                                                        command=lambda value=number: self.compare_file_name.set(value))
 
     def draw_figure_number(self):
         self.figure = plt.Figure(figsize=(3, 4), dpi=100)
@@ -232,10 +236,9 @@ class Application:
         self.graph_y.get_tk_widget().pack_forget()
         self.graph_y.get_tk_widget().destroy()
         self.draw_figure_y()
-
-        self.x.clear()
-        self.y.clear()
-        self.number_of_events.clear()
+        self.x = []
+        self.y = []
+        self.number_of_events = []
 
     def read_file(self):
         # open file for read
@@ -274,65 +277,54 @@ class Application:
         self.compare_calculate_time_series()
 
     def calculate_time_series(self):
-        t = 1
+        self.series1 = []
         self.x_velocity.append(0)
-        while t < len(self.x):
-            self.x_velocity.append(self.x[t] - self.x[t-1])
-            t += 1
+        for i in range(1, len(self.x)):
+            self.x_velocity.append(self.x[i] - self.x[i - 1])
 
-        t = 1
         self.y_velocity.append(0)
-        while t < len(self.y):
-            self.y_velocity.append(self.y[t] - self.y[t - 1])
-            t += 1
+        for i in range(1, len(self.y)):
+            self.y_velocity.append(self.y[i] - self.y[i - 1])
 
-        t = 2
         self.x_acceleration.append(0)
         self.x_acceleration.append(0)
-        while t < len(self.x_velocity):
-            self.x_acceleration.append(self.x_velocity[t] - self.x_velocity[t - 1])
-            t += 1
+        for i in range(2, len(self.x_velocity)):
+            self.x_acceleration.append(self.x_velocity[i] - self.x_velocity[i - 1])
 
-        t = 2
         self.y_acceleration.append(0)
         self.y_acceleration.append(0)
-        while t < len(self.y_velocity):
-            self.y_acceleration.append(self.y_velocity[t] - self.y_velocity[t - 1])
-            t += 1
-
+        for i in range(2, len(self.y_velocity)):
+            self.y_acceleration.append(self.y_velocity[i] - self.y_velocity[i - 1])
         self.series1.append(self.x)
         self.series1.append(self.x_velocity)
         self.series1.append(self.x_acceleration)
         self.series1.append(self.y)
         self.series1.append(self.y_velocity)
         self.series1.append(self.y_acceleration)
+        self.x_velocity = []
+        self.x_acceleration = []
+        self.y_velocity = []
+        self.y_acceleration = []
 
     def compare_calculate_time_series(self):
-        t = 1
+        self.series2 = []
         self.compare_x_velocity.append(0)
-        while t < len(self.compare_x):
-            self.compare_x_velocity.append(self.compare_x[t] - self.compare_x[t-1])
-            t += 1
+        for i in range(1, len(self.compare_x)):
+            self.compare_x_velocity.append(self.compare_x[i] - self.compare_x[i - 1])
 
-        t = 1
         self.compare_y_velocity.append(0)
-        while t < len(self.compare_y):
-            self.compare_y_velocity.append(self.compare_y[t] - self.compare_y[t - 1])
-            t += 1
+        for i in range(1, len(self.compare_y)):
+            self.compare_y_velocity.append(self.compare_y[i] - self.compare_y[i - 1])
 
-        t = 2
         self.compare_x_acceleration.append(0)
         self.compare_x_acceleration.append(0)
-        while t < len(self.compare_x_velocity):
-            self.compare_x_acceleration.append(self.compare_x_velocity[t] - self.compare_x_velocity[t - 1])
-            t += 1
+        for i in range(2, len(self.compare_x_velocity)):
+            self.compare_x_acceleration.append(self.compare_x_velocity[i] - self.compare_x_velocity[i - 1])
 
-        t = 2
         self.compare_y_acceleration.append(0)
         self.compare_y_acceleration.append(0)
-        while t < len(self.compare_y_velocity):
-            self.compare_y_acceleration.append(self.compare_y_velocity[t] - self.compare_y_velocity[t - 1])
-            t += 1
+        for i in range(2, len(self.compare_y_velocity)):
+            self.compare_y_acceleration.append(self.compare_y_velocity[i] - self.compare_y_velocity[i - 1])
 
         self.series2.append(self.compare_x)
         self.series2.append(self.compare_x_velocity)
@@ -340,6 +332,36 @@ class Application:
         self.series2.append(self.compare_y)
         self.series2.append(self.compare_y_velocity)
         self.series2.append(self.compare_y_acceleration)
+        self.compare_x = []
+        self.compare_x_velocity = []
+        self.compare_x_acceleration = []
+        self.compare_y = []
+        self.compare_y_velocity = []
+        self.compare_y_acceleration = []
+
+    def manual_dtw_calculation(self):
+        n = len(self.series1[0])
+        m = len(self.series2[0])
+        dtw_array = np.zeros((n, m), dtype=np.int32)
+        for i in range(n):
+            for j in range(m):
+                dtw_array[i][j] = 999
+        dtw_array[0][0] = 0
+
+        for i in range(n):
+            for j in range(m):
+                # Euclidean distance
+                power1 = (self.series1[0][i] - self.series2[0][j]) ** 2
+                power2 = (self.series1[1][i] - self.series2[1][j]) ** 2
+                power3 = (self.series1[2][i] - self.series2[2][j]) ** 2
+                power4 = (self.series1[3][i] - self.series2[3][j]) ** 2
+                power5 = (self.series1[4][i] - self.series2[4][j]) ** 2
+                power6 = (self.series1[5][i] - self.series2[5][j]) ** 2
+                cost = math.sqrt(power1 + power2 + power3 + power4 + power5 + power6)
+                dtw_array[i][j] = cost + min(dtw_array[i - 1][j], dtw_array[i][j - 1], dtw_array[i - 1][j - 1])
+
+        for i in range(n):
+            print(dtw_array[i])
 
 
 if __name__ == '__main__':
