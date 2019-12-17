@@ -10,6 +10,28 @@ from tkinter import *
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import sys
+
+
+# 6 dimensional point
+class Point:
+    def __init__(self, x, y, x1, y1, x2, y2):
+        self.x = x
+        self.y = y
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+
+
+# returns the euclidean distance between point1 and point2
+def euclidean_distance(point1: Point, point2: Point):
+    return math.sqrt(((point1.x - point2.x) ** 2) +
+                     ((point1.y - point2.y) ** 2) +
+                     ((point1.x1 - point2.x1) ** 2) +
+                     ((point1.y1 - point2.y1) ** 2) +
+                     ((point1.x2 - point2.x2) ** 2) +
+                     ((point1.y2 - point2.y2) ** 2))
 
 
 class Application(object):
@@ -295,12 +317,14 @@ class Application(object):
         self.y_acceleration.append(0)
         for i in range(2, len(self.y_velocity)):
             self.y_acceleration.append(self.y_velocity[i] - self.y_velocity[i - 1])
-        self.series1.append(self.x)
-        self.series1.append(self.x_velocity)
-        self.series1.append(self.x_acceleration)
-        self.series1.append(self.y)
-        self.series1.append(self.y_velocity)
-        self.series1.append(self.y_acceleration)
+
+        for i in range(len(self.x)):
+            self.series1.append(Point(self.x[i],
+                                      self.y[i],
+                                      self.x_velocity[i],
+                                      self.y_velocity[i],
+                                      self.x_acceleration[i],
+                                      self.y_acceleration[i]))
         self.x_velocity = []
         self.x_acceleration = []
         self.y_velocity = []
@@ -326,12 +350,13 @@ class Application(object):
         for i in range(2, len(self.compare_y_velocity)):
             self.compare_y_acceleration.append(self.compare_y_velocity[i] - self.compare_y_velocity[i - 1])
 
-        self.series2.append(self.compare_x)
-        self.series2.append(self.compare_x_velocity)
-        self.series2.append(self.compare_x_acceleration)
-        self.series2.append(self.compare_y)
-        self.series2.append(self.compare_y_velocity)
-        self.series2.append(self.compare_y_acceleration)
+        for i in range(len(self.compare_x)):
+            self.series2.append(Point(self.compare_x[i],
+                                      self.compare_y[i],
+                                      self.compare_x_velocity[i],
+                                      self.compare_y_velocity[i],
+                                      self.compare_x_acceleration[i],
+                                      self.compare_y_acceleration[i]))
         self.compare_x = []
         self.compare_x_velocity = []
         self.compare_x_acceleration = []
@@ -340,28 +365,23 @@ class Application(object):
         self.compare_y_acceleration = []
 
     def manual_dtw_calculation(self):
-        n = len(self.series1[0])
-        m = len(self.series2[0])
-        dtw_array = np.zeros((n, m), dtype=np.int32)
-        for i in range(n):
-            for j in range(m):
-                dtw_array[i][j] = 999
-        dtw_array[0][0] = 0
+        n = len(self.series1)
+        m = len(self.series2)
+        dtw_matrix = np.zeros((n, m), dtype=np.float)
 
-        for i in range(n):
-            for j in range(m):
-                # Euclidean distance
-                power1 = (self.series1[0][i] - self.series2[0][j]) ** 2
-                power2 = (self.series1[1][i] - self.series2[1][j]) ** 2
-                power3 = (self.series1[2][i] - self.series2[2][j]) ** 2
-                power4 = (self.series1[3][i] - self.series2[3][j]) ** 2
-                power5 = (self.series1[4][i] - self.series2[4][j]) ** 2
-                power6 = (self.series1[5][i] - self.series2[5][j]) ** 2
-                cost = math.sqrt(power1 + power2 + power3 + power4 + power5 + power6)
-                dtw_array[i][j] = cost + min(dtw_array[i - 1][j], dtw_array[i][j - 1], dtw_array[i - 1][j - 1])
+        for i in range(0, n):
+            for j in range(0, m):
+                dtw_matrix[i][j] = sys.float_info.max
 
-        for i in range(n):
-            print(dtw_array[i])
+        dtw_matrix[0][0] = 0
+
+        for i in range(1, n):
+            for j in range(1, m):
+                cost = euclidean_distance(self.series1[i], self.series2[j])
+                dtw_matrix[i][j] = cost + min(dtw_matrix[i - 1][j], dtw_matrix[i][j - 1], dtw_matrix[i - 1][j - 1])
+
+        print(dtw_matrix[n - 1][m - 1] / (m + n))
+        return dtw_matrix[n - 1][m - 1] / (m + n)
 
 
 if __name__ == '__main__':
