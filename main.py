@@ -34,29 +34,91 @@ def euclidean_distance(point1: Point, point2: Point):
                      ((point1.y2 - point2.y2) ** 2))
 
 
+def calculate_time_series(x, y):
+    series = []
+    # velocity of the first number: x', y'
+    x_velocity = []
+    y_velocity = []
+    # acceleration of the first number: x'', y''
+    x_acceleration = []
+    y_acceleration = []
+
+    x_velocity.append(0)
+    for i in range(1, len(x)):
+        x_velocity.append(x[i] - x[i - 1])
+
+    y_velocity.append(0)
+    for i in range(1, len(y)):
+        y_velocity.append(y[i] - y[i - 1])
+
+    x_acceleration.append(0)
+    x_acceleration.append(0)
+    for i in range(2, len(x_velocity)):
+        x_acceleration.append(x_velocity[i] - x_velocity[i - 1])
+
+    y_acceleration.append(0)
+    y_acceleration.append(0)
+    for i in range(2, len(y_velocity)):
+        y_acceleration.append(y_velocity[i] - y_velocity[i - 1])
+
+    for i in range(len(x)):
+        series.append(Point(x[i], y[i], x_velocity[i], y_velocity[i], x_acceleration[i], y_acceleration[i]))
+    return series
+
+
+def read_file(file_path):
+    x = []
+    y = []
+    number_of_events = []
+    # open file for read
+    file_handler = open(file_path)
+    # read file lines
+    lines = file_handler.read().splitlines()
+    # go through file lines
+    for line in lines:
+        # if first row
+        if len(line.split()) == 1:
+            number_of_events.append(int(line.split()[0]))
+        else:
+            x.append(int(line.split()[0]))
+            y.append(int(line.split()[1]))
+    # close file
+    file_handler.close()
+    series = calculate_time_series(x, y)
+    return x, y, number_of_events, series
+
+
+def manual_dtw_calculation(series1, series2):
+    n = len(series1)
+    m = len(series2)
+    dtw_matrix = np.zeros((n, m), dtype=np.float)
+
+    for i in range(0, n):
+        for j in range(0, m):
+            dtw_matrix[i][j] = sys.float_info.max
+
+    dtw_matrix[0][0] = 0
+
+    for i in range(1, n):
+        for j in range(1, m):
+            cost = euclidean_distance(series1[i], series2[j])
+            dtw_matrix[i][j] = cost + min(dtw_matrix[i - 1][j], dtw_matrix[i][j - 1], dtw_matrix[i - 1][j - 1])
+
+    print(dtw_matrix[n - 1][m - 1] / (m + n))
+    return dtw_matrix[n - 1][m - 1] / (m + n)
+
+
 class Application(object):
     def __init__(self):
         # arrays used to draw figures (First number)
         self.x = []
         self.y = []
-        # velocity of the first number: x', y'
-        self.x_velocity = []
-        self.y_velocity = []
-        # acceleration of the first number: x'', y''
-        self.x_acceleration = []
-        self.y_acceleration = []
         # multi dimensional time series
         self.series1 = []
         self.series2 = []
         # arrays used to compare two number
         self.compare_x = []
         self.compare_y = []
-        # compared x' and y' array
-        self.compare_x_velocity = []
-        self.compare_y_velocity = []
-        # compared x'' and y'' array
-        self.compare_x_acceleration = []
-        self.compare_y_acceleration = []
 
         self.number_of_events = []
         self.compare_number_of_events = []
@@ -190,8 +252,8 @@ class Application(object):
     # on file name popup_menu value change
     def compare_txt_file_changed(self, *args):
         self.compare_file_name.set(self.compare_file_name.get())
-        self.compare_read_file()
-        self.manual_dtw_calculation()
+        (self.compare_x, self.compare_y, self.compare_number_of_events, self.series2) = read_file("e-BioDigit_DB/" + self.compare_folder_name.get() + "/" + self.compare_session_name.get() + "/" + self.compare_file_name.get())
+        manual_dtw_calculation(self.series1, self.series2)
 
     # refresh the option menu, with file name
     def refresh_file_name_option_menu(self):
@@ -247,7 +309,7 @@ class Application(object):
         self.ax.set_title('Y Coord Linear')
 
     def draw_figures(self):
-        self.read_file()
+        (self.x, self.y, self.number_of_events, self.series1) = read_file("e-BioDigit_DB/" + self.folder_name.get() + "/" + self.session_name.get() + "/" + self.file_name.get())
         # remove graphs and redraw
         self.graph_number.get_tk_widget().pack_forget()
         self.graph_number.get_tk_widget().destroy()
@@ -262,126 +324,28 @@ class Application(object):
         self.y = []
         self.number_of_events = []
 
-    def read_file(self):
-        # open file for read
-        file_handler = open(
-            "e-BioDigit_DB/" + self.folder_name.get() + "/" + self.session_name.get() + "/" + self.file_name.get())
-        # read file lines
-        lines = file_handler.read().splitlines()
-        # go through file lines
-        for line in lines:
-            # if first row
-            if len(line.split()) == 1:
-                self.number_of_events.append(int(line.split()[0]))
-            else:
-                self.x.append(int(line.split()[0]))
-                self.y.append(int(line.split()[1]))
-        # close file
-        file_handler.close()
-        self.calculate_time_series()
+    def experimental_protocol(self):
+        x = []
+        y = []
+        number_of_events = []
+        enrolment_series = []
+        test_x = []
+        test_y = []
+        test_number_of_events = []
+        test_series = []
 
-    def compare_read_file(self):
-        # open file for read
-        file_handler = open(
-            "e-BioDigit_DB/" + self.compare_folder_name.get() + "/" + self.compare_session_name.get() + "/" + self.compare_file_name.get())
-        # read file lines
-        lines = file_handler.read().splitlines()
-        # go through file lines
-        for line in lines:
-            # if first row
-            if len(line.split()) == 1:
-                self.compare_number_of_events.append(int(line.split()[0]))
-            else:
-                self.compare_x.append(int(line.split()[0]))
-                self.compare_y.append(int(line.split()[1]))
-        # close file
-        file_handler.close()
-        self.compare_calculate_time_series()
+        enrolment_number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0])
+        enrolment_number_list.sort()
+        test_number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1])
+        test_number_list.sort()
+        (x, y, number_of_events, enrolment_series) = read_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0] + "/" + self.file_name.get())
+        (test_x, test_y, test_number_of_events, test_series) = read_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1] + "/" + self.file_name.get())
 
-    def calculate_time_series(self):
-        self.series1 = []
-        self.x_velocity.append(0)
-        for i in range(1, len(self.x)):
-            self.x_velocity.append(self.x[i] - self.x[i - 1])
-
-        self.y_velocity.append(0)
-        for i in range(1, len(self.y)):
-            self.y_velocity.append(self.y[i] - self.y[i - 1])
-
-        self.x_acceleration.append(0)
-        self.x_acceleration.append(0)
-        for i in range(2, len(self.x_velocity)):
-            self.x_acceleration.append(self.x_velocity[i] - self.x_velocity[i - 1])
-
-        self.y_acceleration.append(0)
-        self.y_acceleration.append(0)
-        for i in range(2, len(self.y_velocity)):
-            self.y_acceleration.append(self.y_velocity[i] - self.y_velocity[i - 1])
-
-        for i in range(len(self.x)):
-            self.series1.append(Point(self.x[i],
-                                      self.y[i],
-                                      self.x_velocity[i],
-                                      self.y_velocity[i],
-                                      self.x_acceleration[i],
-                                      self.y_acceleration[i]))
-        self.x_velocity = []
-        self.x_acceleration = []
-        self.y_velocity = []
-        self.y_acceleration = []
-
-    def compare_calculate_time_series(self):
-        self.series2 = []
-        self.compare_x_velocity.append(0)
-        for i in range(1, len(self.compare_x)):
-            self.compare_x_velocity.append(self.compare_x[i] - self.compare_x[i - 1])
-
-        self.compare_y_velocity.append(0)
-        for i in range(1, len(self.compare_y)):
-            self.compare_y_velocity.append(self.compare_y[i] - self.compare_y[i - 1])
-
-        self.compare_x_acceleration.append(0)
-        self.compare_x_acceleration.append(0)
-        for i in range(2, len(self.compare_x_velocity)):
-            self.compare_x_acceleration.append(self.compare_x_velocity[i] - self.compare_x_velocity[i - 1])
-
-        self.compare_y_acceleration.append(0)
-        self.compare_y_acceleration.append(0)
-        for i in range(2, len(self.compare_y_velocity)):
-            self.compare_y_acceleration.append(self.compare_y_velocity[i] - self.compare_y_velocity[i - 1])
-
-        for i in range(len(self.compare_x)):
-            self.series2.append(Point(self.compare_x[i],
-                                      self.compare_y[i],
-                                      self.compare_x_velocity[i],
-                                      self.compare_y_velocity[i],
-                                      self.compare_x_acceleration[i],
-                                      self.compare_y_acceleration[i]))
-        self.compare_x = []
-        self.compare_x_velocity = []
-        self.compare_x_acceleration = []
-        self.compare_y = []
-        self.compare_y_velocity = []
-        self.compare_y_acceleration = []
-
-    def manual_dtw_calculation(self):
-        n = len(self.series1)
-        m = len(self.series2)
-        dtw_matrix = np.zeros((n, m), dtype=np.float)
-
-        for i in range(0, n):
-            for j in range(0, m):
-                dtw_matrix[i][j] = sys.float_info.max
-
-        dtw_matrix[0][0] = 0
-
-        for i in range(1, n):
-            for j in range(1, m):
-                cost = euclidean_distance(self.series1[i], self.series2[j])
-                dtw_matrix[i][j] = cost + min(dtw_matrix[i - 1][j], dtw_matrix[i][j - 1], dtw_matrix[i - 1][j - 1])
-
-        print(dtw_matrix[n - 1][m - 1] / (m + n))
-        return dtw_matrix[n - 1][m - 1] / (m + n)
+        for number in enrolment_number_list:
+            print()
+        enrolment_samples = []
+        test_samples = []
+        print()
 
 
 if __name__ == '__main__':
