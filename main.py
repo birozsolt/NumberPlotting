@@ -2,15 +2,29 @@
 # packages used for dynamic time warping calculations
 import math
 import os
+import sys
 # package used for building user interface
 import tkinter as tk
+from enum import Enum
 from tkinter import *
 
 # packages used for plotting figures
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import sys
+
+
+class Digit(Enum):
+    digit_0 = 0
+    digit_1 = 1
+    digit_2 = 2
+    digit_3 = 3
+    digit_4 = 4
+    digit_5 = 5
+    digit_6 = 6
+    digit_7 = 7
+    digit_8 = 8
+    digit_9 = 9
 
 
 # 6 dimensional point
@@ -104,8 +118,18 @@ def manual_dtw_calculation(series1, series2):
             cost = euclidean_distance(series1[i], series2[j])
             dtw_matrix[i][j] = cost + min(dtw_matrix[i - 1][j], dtw_matrix[i][j - 1], dtw_matrix[i - 1][j - 1])
 
-    print(dtw_matrix[n - 1][m - 1] / (m + n))
     return dtw_matrix[n - 1][m - 1] / (m + n)
+
+
+def write_to_file(file_path, enrolment_series, digit, compared_digit):
+    (x, y, number_of_events, series) = read_file(file_path)
+    distance = manual_dtw_calculation(enrolment_series, series)
+    with open("experiment_{}.csv".format(digit.name), "r") as file:
+        lines = file.readlines()
+    lines[compared_digit.value] = lines[compared_digit.value].rstrip('\n')
+    lines[compared_digit.value] += "{}, \n".format(distance)
+    with open("experiment_{}.csv".format(digit.name), "w") as file:
+        file.writelines(lines)
 
 
 class Application(object):
@@ -175,6 +199,8 @@ class Application(object):
         self.compare_folder_name.trace('w', self.compare_database_folder_changed)
         self.compare_session_name.trace('w', self.compare_session_folder_changed)
         self.compare_file_name.trace('w', self.compare_txt_file_changed)
+        for digit in Digit:
+            self.experimental_protocol(digit)
         # start the main window
         self.window.mainloop()
 
@@ -252,7 +278,8 @@ class Application(object):
     # on file name popup_menu value change
     def compare_txt_file_changed(self, *args):
         self.compare_file_name.set(self.compare_file_name.get())
-        (self.compare_x, self.compare_y, self.compare_number_of_events, self.series2) = read_file("e-BioDigit_DB/" + self.compare_folder_name.get() + "/" + self.compare_session_name.get() + "/" + self.compare_file_name.get())
+        (self.compare_x, self.compare_y, self.compare_number_of_events, self.series2) = read_file(
+            "e-BioDigit_DB/" + self.compare_folder_name.get() + "/" + self.compare_session_name.get() + "/" + self.compare_file_name.get())
         manual_dtw_calculation(self.series1, self.series2)
 
     # refresh the option menu, with file name
@@ -309,7 +336,8 @@ class Application(object):
         self.ax.set_title('Y Coord Linear')
 
     def draw_figures(self):
-        (self.x, self.y, self.number_of_events, self.series1) = read_file("e-BioDigit_DB/" + self.folder_name.get() + "/" + self.session_name.get() + "/" + self.file_name.get())
+        (self.x, self.y, self.number_of_events, self.series1) = read_file(
+            "e-BioDigit_DB/" + self.folder_name.get() + "/" + self.session_name.get() + "/" + self.file_name.get())
         # remove graphs and redraw
         self.graph_number.get_tk_widget().pack_forget()
         self.graph_number.get_tk_widget().destroy()
@@ -324,28 +352,39 @@ class Application(object):
         self.y = []
         self.number_of_events = []
 
-    def experimental_protocol(self):
-        x = []
-        y = []
-        number_of_events = []
+    def experimental_protocol(self, test_digit):
         enrolment_series = []
-        test_x = []
-        test_y = []
-        test_number_of_events = []
-        test_series = []
-
+        # Creating the file list from session 1 folder
         enrolment_number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0])
         enrolment_number_list.sort()
+        # Creating the file list from session 2 folder
         test_number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1])
         test_number_list.sort()
-        (x, y, number_of_events, enrolment_series) = read_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0] + "/" + self.file_name.get())
-        (test_x, test_y, test_number_of_events, test_series) = read_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1] + "/" + self.file_name.get())
-
-        for number in enrolment_number_list:
-            print()
-        enrolment_samples = []
-        test_samples = []
-        print()
+        # Creating the files
+        with open("experiment_{}.csv".format(test_digit.name), "w+") as file:
+            for digitToWrite in Digit:
+                if digitToWrite == Digit.digit_0:
+                    file.write("{}: ".format(digitToWrite.name))
+                else:
+                    file.write("\n{}: ".format(digitToWrite.name))
+        # Getting the enrolment sample
+        for file_name in enrolment_number_list:
+            if test_digit.name in file_name:
+                (x, y, number_of_events, enrolment_series) = read_file(
+                    'e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0] + "/" + file_name)
+                break
+        # Comparing the enrolment sample with other samples from session1 folder
+        for file_name in enrolment_number_list:
+            for digit in Digit:
+                if digit.name in file_name:
+                    write_to_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0] + "/" + file_name,
+                                  enrolment_series, test_digit, digit)
+        # Comparing the enrolment sample with other samples from session2 folder
+        for test_file_name in test_number_list:
+            for digit in Digit:
+                if digit.name in test_file_name:
+                    write_to_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1] + "/" + test_file_name,
+                                  enrolment_series, test_digit, digit)
 
 
 if __name__ == '__main__':
