@@ -38,6 +38,13 @@ class Point:
         self.y2 = y2
 
 
+def min_max_normalization(series):
+    min_v = min(series)
+    max_v = max(series)
+    range_v = max_v - min_v
+    return [(element - min_v) / range_v for element in series]
+
+
 # returns the euclidean distance between point1 and point2
 def euclidean_distance(point1: Point, point2: Point):
     return math.sqrt(((point1.x - point2.x) ** 2) +
@@ -50,6 +57,8 @@ def euclidean_distance(point1: Point, point2: Point):
 
 def calculate_time_series(x, y):
     series = []
+    normalized_x = min_max_normalization(x)
+    normalized_y = min_max_normalization(y)
     # velocity of the first number: x', y'
     x_velocity = []
     y_velocity = []
@@ -58,12 +67,12 @@ def calculate_time_series(x, y):
     y_acceleration = []
 
     x_velocity.append(0)
-    for i in range(1, len(x)):
-        x_velocity.append(x[i] - x[i - 1])
+    for i in range(1, len(normalized_x)):
+        x_velocity.append(normalized_x[i] - normalized_x[i - 1])
 
     y_velocity.append(0)
-    for i in range(1, len(y)):
-        y_velocity.append(y[i] - y[i - 1])
+    for i in range(1, len(normalized_y)):
+        y_velocity.append(normalized_y[i] - normalized_y[i - 1])
 
     x_acceleration.append(0)
     x_acceleration.append(0)
@@ -75,8 +84,8 @@ def calculate_time_series(x, y):
     for i in range(2, len(y_velocity)):
         y_acceleration.append(y_velocity[i] - y_velocity[i - 1])
 
-    for i in range(len(x)):
-        series.append(Point(x[i], y[i], x_velocity[i], y_velocity[i], x_acceleration[i], y_acceleration[i]))
+    for i in range(len(normalized_x)):
+        series.append(Point(normalized_x[i], normalized_y[i], x_velocity[i], y_velocity[i], x_acceleration[i], y_acceleration[i]))
     return series
 
 
