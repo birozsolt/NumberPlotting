@@ -27,6 +27,11 @@ class Digit(Enum):
     digit_9 = 9
 
 
+class FileType(Enum):
+    test = 0
+    enrollment = 1
+
+
 # 6 dimensional point
 class Point:
     def __init__(self, x, y, x1, y1, x2, y2):
@@ -130,15 +135,48 @@ def manual_dtw_calculation(series1, series2):
     return dtw_matrix[n - 1][m - 1] / (m + n)
 
 
-def write_to_file(file_path, enrolment_series, digit, compared_digit):
+def write_to_file(file_path, enrolment_series, digit, compared_digit, file_type):
     (x, y, number_of_events, series) = read_file(file_path)
     distance = manual_dtw_calculation(enrolment_series, series)
-    with open("experiment_{}.csv".format(digit.name), "r") as file:
-        lines = file.readlines()
-    lines[compared_digit.value] = lines[compared_digit.value].rstrip('\n')
-    lines[compared_digit.value] += "{}, \n".format(distance)
-    with open("experiment_{}.csv".format(digit.name), "w") as file:
-        file.writelines(lines)
+    if file_type == FileType.test:
+        with open("experiment_test_{}.csv".format(digit.name), "r") as file:
+            lines = file.readlines()
+        lines[compared_digit.value] = lines[compared_digit.value].rstrip('\n')
+        lines[compared_digit.value] += "{}, \n".format(distance)
+        with open("experiment_test_{}.csv".format(digit.name), "w") as file:
+            file.writelines(lines)
+    else:
+        with open("experiment_{}.csv".format(digit.name), "r") as file:
+            lines = file.readlines()
+        lines[compared_digit.value] = lines[compared_digit.value].rstrip('\n')
+        lines[compared_digit.value] += "{}, \n".format(distance)
+        with open("experiment_{}.csv".format(digit.name), "w") as file:
+            file.writelines(lines)
+
+
+def create_file(digit, file_type):
+    if file_type == FileType.enrollment:
+        file_name = "experiment_{}.csv".format(digit.name)
+    else:
+        file_name = "experiment_test_{}.csv".format(digit.name)
+
+    with open(file_name, "w+") as file:
+        for digitToWrite in Digit:
+            if digitToWrite == Digit.digit_0:
+                file.write("{}: ".format(digitToWrite.name))
+            else:
+                file.write("\n{}: ".format(digitToWrite.name))
+
+
+def experimental_protocol(test_digit, enrolment_series, test_number_list_path, file_type):
+    # Creating the file list from session 2 folder
+    test_number_list = os.listdir(test_number_list_path)
+    test_number_list.sort()
+    # Comparing the enrolment sample with other samples from test_number_list_path
+    for test_file_name in test_number_list:
+        for digit in Digit:
+            if digit.name in test_file_name:
+                write_to_file(test_number_list_path + "/" + test_file_name, enrolment_series, test_digit, digit, file_type)
 
 
 class Application(object):
@@ -209,7 +247,26 @@ class Application(object):
         self.compare_session_name.trace('w', self.compare_session_folder_changed)
         self.compare_file_name.trace('w', self.compare_txt_file_changed)
         for digit in Digit:
-            self.experimental_protocol(digit)
+            # Creating the files if they are not exist
+            create_file(digit, FileType.enrollment)
+            create_file(digit, FileType.test)
+            # Getting the enrolment sample
+            for file_name in self.number_list:
+                if digit.name in file_name:
+                    (x, y, number_of_events, enrolment_series) = read_file('e-BioDigit_DB/' + self.folder_list[0] + '/' +
+                                                                           self.session_list[0] + '/' + file_name)
+                    break
+            enrollment_path = 'e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0]
+            experimental_protocol(digit, enrolment_series, enrollment_path, FileType.enrollment)
+            enrollment_path2 = 'e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1]
+            experimental_protocol(digit, enrolment_series, enrollment_path2, FileType.enrollment)
+            for i in range(1, 10):
+                session_list = os.listdir('e-BioDigit_DB/' + self.folder_list[i])
+                session_list.sort()
+                test_path = 'e-BioDigit_DB/' + self.folder_list[i] + '/' + session_list[0]
+                experimental_protocol(digit, enrolment_series, test_path, FileType.test)
+                test_path2 = 'e-BioDigit_DB/' + self.folder_list[i] + '/' + session_list[1]
+                experimental_protocol(digit, enrolment_series, test_path2, FileType.test)
         # start the main window
         self.window.mainloop()
 
@@ -360,40 +417,6 @@ class Application(object):
         self.x = []
         self.y = []
         self.number_of_events = []
-
-    def experimental_protocol(self, test_digit):
-        enrolment_series = []
-        # Creating the file list from session 1 folder
-        enrolment_number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0])
-        enrolment_number_list.sort()
-        # Creating the file list from session 2 folder
-        test_number_list = os.listdir('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1])
-        test_number_list.sort()
-        # Creating the files
-        with open("experiment_{}.csv".format(test_digit.name), "w+") as file:
-            for digitToWrite in Digit:
-                if digitToWrite == Digit.digit_0:
-                    file.write("{}: ".format(digitToWrite.name))
-                else:
-                    file.write("\n{}: ".format(digitToWrite.name))
-        # Getting the enrolment sample
-        for file_name in enrolment_number_list:
-            if test_digit.name in file_name:
-                (x, y, number_of_events, enrolment_series) = read_file(
-                    'e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0] + "/" + file_name)
-                break
-        # Comparing the enrolment sample with other samples from session1 folder
-        for file_name in enrolment_number_list:
-            for digit in Digit:
-                if digit.name in file_name:
-                    write_to_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0] + "/" + file_name,
-                                  enrolment_series, test_digit, digit)
-        # Comparing the enrolment sample with other samples from session2 folder
-        for test_file_name in test_number_list:
-            for digit in Digit:
-                if digit.name in test_file_name:
-                    write_to_file('e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1] + "/" + test_file_name,
-                                  enrolment_series, test_digit, digit)
 
 
 if __name__ == '__main__':
