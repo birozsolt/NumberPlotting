@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+import re
+
 
 class Digit(Enum):
     digit_0 = 0
@@ -135,48 +137,57 @@ def manual_dtw_calculation(series1, series2):
     return dtw_matrix[n - 1][m - 1] / (m + n)
 
 
-def write_to_file(file_path, enrolment_series, digit, compared_digit, file_type):
-    (x, y, number_of_events, series) = read_file(file_path)
-    distance = manual_dtw_calculation(enrolment_series, series)
-    if file_type == FileType.test:
-        with open("experiment_test_{}.csv".format(digit.name), "r") as file:
-            lines = file.readlines()
-        lines[compared_digit.value] = lines[compared_digit.value].rstrip('\n')
-        lines[compared_digit.value] += "{}, \n".format(distance)
-        with open("experiment_test_{}.csv".format(digit.name), "w") as file:
-            file.writelines(lines)
-    else:
-        with open("experiment_{}.csv".format(digit.name), "r") as file:
-            lines = file.readlines()
-        lines[compared_digit.value] = lines[compared_digit.value].rstrip('\n')
-        lines[compared_digit.value] += "{}, \n".format(distance)
-        with open("experiment_{}.csv".format(digit.name), "w") as file:
-            file.writelines(lines)
+def write_to_file(userid, digit, digit_order, compared_userid, compared_digit, compared_digit_order, distance, label):
+    with open("result_file.csv", "a") as file:
+        file.write("{},{},{},{},{},{},{},{}\n".format(userid, digit, digit_order, compared_userid, compared_digit,
+                                                      compared_digit_order, distance, label))
 
 
-def create_file(digit, file_type):
-    if file_type == FileType.enrollment:
-        file_name = "experiment_{}.csv".format(digit.name)
-    else:
-        file_name = "experiment_test_{}.csv".format(digit.name)
-
+def create_file():
+    file_name = "result_file.csv"
     with open(file_name, "w+") as file:
-        for digitToWrite in Digit:
-            if digitToWrite == Digit.digit_0:
-                file.write("{}: ".format(digitToWrite.name))
-            else:
-                file.write("\n{}: ".format(digitToWrite.name))
+        file.write("userId,digit,digitOrder,comparedUserId,comparedDigit,comparedDigitOrder,score,label\n")
 
 
-def experimental_protocol(test_digit, enrolment_series, test_number_list_path, file_type):
-    # Creating the file list from session 2 folder
-    test_number_list = os.listdir(test_number_list_path)
-    test_number_list.sort()
-    # Comparing the enrolment sample with other samples from test_number_list_path
-    for test_file_name in test_number_list:
-        for digit in Digit:
-            if digit.name in test_file_name:
-                write_to_file(test_number_list_path + "/" + test_file_name, enrolment_series, test_digit, digit, file_type)
+def split_text(text):
+    x = [float(s) for s in re.findall(r'-?\d+\.?\d*', text)]
+    return int(x[0]), int(x[1]), int(x[2])
+
+
+def experimental_protocol(folder_list, session):
+    # Creating the files if they are not exist
+    create_file()
+    for digit in Digit:
+        number_list = os.listdir('e-BioDigit_DB/' + folder_list[0] + '/' + session)
+        number_list.sort()
+        # Getting the enrolment sample
+        for file_name in number_list:
+            if digit.name in file_name:
+                (user_id, e_digit, digit_order) = split_text(file_name)
+                if digit_order == 10:
+                    (x, y, number_of_events, enrolment_series) = read_file(
+                        'e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + file_name)
+                    break
+        # Getting the positive samples
+        for e_file_name in number_list:
+            if digit.name in e_file_name:
+                (x2, y2, number_of_events2, enrolment_series2) = read_file(
+                    'e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + e_file_name)
+                (user_id2, e_digit2, digit_order2) = split_text(e_file_name)
+                distance = manual_dtw_calculation(enrolment_series, enrolment_series2)
+                write_to_file(user_id, e_digit, digit_order, user_id2, e_digit2, digit_order2, distance, 1)
+        # Getting the negative samples
+        for i in range(1, len(folder_list)):
+            test_files = os.listdir('e-BioDigit_DB/' + folder_list[i] + '/' + session)
+            for test_file_name in test_files:
+                if digit.name in test_file_name:
+                    (test_user_id, test_e_digit, test_digit_order) = split_text(test_file_name)
+                    if test_digit_order == 10:
+                        (x, y, number_of_events, test_series) = read_file(
+                            'e-BioDigit_DB/' + folder_list[i] + '/' + session + '/' + test_file_name)
+                        break
+            distance2 = manual_dtw_calculation(enrolment_series, test_series)
+            write_to_file(user_id, e_digit, digit_order, test_user_id, test_e_digit, test_digit_order, distance2, 0)
 
 
 class Application(object):
@@ -246,27 +257,9 @@ class Application(object):
         self.compare_folder_name.trace('w', self.compare_database_folder_changed)
         self.compare_session_name.trace('w', self.compare_session_folder_changed)
         self.compare_file_name.trace('w', self.compare_txt_file_changed)
-        for digit in Digit:
-            # Creating the files if they are not exist
-            create_file(digit, FileType.enrollment)
-            create_file(digit, FileType.test)
-            # Getting the enrolment sample
-            for file_name in self.number_list:
-                if digit.name in file_name:
-                    (x, y, number_of_events, enrolment_series) = read_file('e-BioDigit_DB/' + self.folder_list[0] + '/' +
-                                                                           self.session_list[0] + '/' + file_name)
-                    break
-            enrollment_path = 'e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[0]
-            experimental_protocol(digit, enrolment_series, enrollment_path, FileType.enrollment)
-            enrollment_path2 = 'e-BioDigit_DB/' + self.folder_list[0] + '/' + self.session_list[1]
-            experimental_protocol(digit, enrolment_series, enrollment_path2, FileType.enrollment)
-            for i in range(1, 10):
-                session_list = os.listdir('e-BioDigit_DB/' + self.folder_list[i])
-                session_list.sort()
-                test_path = 'e-BioDigit_DB/' + self.folder_list[i] + '/' + session_list[0]
-                experimental_protocol(digit, enrolment_series, test_path, FileType.test)
-                test_path2 = 'e-BioDigit_DB/' + self.folder_list[i] + '/' + session_list[1]
-                experimental_protocol(digit, enrolment_series, test_path2, FileType.test)
+
+        experimental_protocol(self.folder_list, self.session_list[1])
+
         # start the main window
         self.window.mainloop()
 
