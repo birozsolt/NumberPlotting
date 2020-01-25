@@ -145,15 +145,43 @@ def write_to_file(userid, digit, digit_order, compared_userid, compared_digit, c
                                                       compared_digit_order, distance, label))
 
 
+def write_to_file_4v1(userid, digit, compared_userid, compared_digit, compared_digit_order, distance, label):
+    with open("result_file_4v1.csv", "a") as file:
+        file.write("{},{},{},{},{},{},{}\n".format(userid, digit, compared_userid, compared_digit,
+                                                   compared_digit_order, distance, label))
+
+
 def create_file():
     file_name = "result_file.csv"
     with open(file_name, "w") as file:
         file.write("userId,digit,digitOrder,comparedUserId,comparedDigit,comparedDigitOrder,score,label\n")
+    file_name = "result_file_4v1.csv"
+    with open(file_name, "w") as file:
+        file.write("userId,digit,comparedUserId,comparedDigit,comparedDigitOrder,score,label\n")
 
 
 def split_text(text):
     x = [float(s) for s in re.findall(r'-?\d+\.?\d*', text)]
     return int(x[0]), int(x[1]), int(x[2])
+
+
+def get_enrolment_sample(digit, folder_list, session):
+    number_list = os.listdir('e-BioDigit_DB/' + folder_list[0] + '/' + session)
+    number_list.sort()
+    enrolment_series = []
+    user_id = []
+    e_digit = []
+    digit_order = []
+    # Getting the enrolment sample
+    for file_name in number_list:
+        if digit.name in file_name:
+            (id, digit_, order) = split_text(file_name)
+            user_id.append(id)
+            e_digit.append(digit_)
+            digit_order.append(order)
+            (x, y, number_of_events, series) = read_file('e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + file_name)
+            enrolment_series.append(series)
+    return (user_id[0], e_digit[0], digit_order[0], enrolment_series)
 
 
 def experimental_protocol(folder_list, session):
@@ -162,22 +190,19 @@ def experimental_protocol(folder_list, session):
     for digit in Digit:
         number_list = os.listdir('e-BioDigit_DB/' + folder_list[0] + '/' + session)
         number_list.sort()
-        # Getting the enrolment sample
-        for file_name in number_list:
-            if digit.name in file_name:
-                (user_id, e_digit, digit_order) = split_text(file_name)
-                if digit_order == 10:
-                    (x, y, number_of_events, enrolment_series) = read_file(
-                        'e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + file_name)
-                    break
+        (user_id, e_digit, digit_order, enrolment_series) = get_enrolment_sample(digit, folder_list, session)
         # Getting the positive samples
         for e_file_name in number_list:
             if digit.name in e_file_name:
                 (x2, y2, number_of_events2, enrolment_series2) = read_file(
                     'e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + e_file_name)
                 (user_id2, e_digit2, digit_order2) = split_text(e_file_name)
-                distance = manual_dtw_calculation(enrolment_series, enrolment_series2)
+                distance_4v1 = 0
+                for serie in enrolment_series:
+                    distance_4v1 += manual_dtw_calculation(serie, enrolment_series2)
+                distance = manual_dtw_calculation(enrolment_series[0], enrolment_series2)
                 write_to_file(user_id, e_digit, digit_order, user_id2, e_digit2, digit_order2, distance, 1)
+                write_to_file_4v1(user_id, e_digit, user_id2, e_digit2, digit_order2, distance_4v1 / 4, 1)
         # Getting the negative samples
         for i in range(1, len(folder_list)):
             test_files = os.listdir('e-BioDigit_DB/' + folder_list[i] + '/' + session)
@@ -188,7 +213,11 @@ def experimental_protocol(folder_list, session):
                         (x, y, number_of_events, test_series) = read_file(
                             'e-BioDigit_DB/' + folder_list[i] + '/' + session + '/' + test_file_name)
                         break
-            distance2 = manual_dtw_calculation(enrolment_series, test_series)
+            distance2_4v1 = 0
+            for serie in enrolment_series:
+                distance2_4v1 += manual_dtw_calculation(serie, test_series)
+            distance2 = manual_dtw_calculation(enrolment_series[0], test_series)
+            write_to_file_4v1(user_id, e_digit, test_user_id, test_e_digit, test_digit_order, distance2_4v1 / 4, 0)
             write_to_file(user_id, e_digit, digit_order, test_user_id, test_e_digit, test_digit_order, distance2, 0)
 
 
