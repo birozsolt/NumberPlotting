@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+import myplot
+
 import re
 
 
@@ -145,7 +147,7 @@ def write_to_file(userid, digit, digit_order, compared_userid, compared_digit, c
 
 def create_file():
     file_name = "result_file.csv"
-    with open(file_name, "w+") as file:
+    with open(file_name, "w") as file:
         file.write("userId,digit,digitOrder,comparedUserId,comparedDigit,comparedDigitOrder,score,label\n")
 
 
@@ -414,3 +416,4 @@ class Application(object):
 
 if __name__ == '__main__':
     Application()
+    myplot.run()
