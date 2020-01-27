@@ -165,8 +165,8 @@ def split_text(text):
     return int(x[0]), int(x[1]), int(x[2])
 
 
-def get_enrolment_sample(digit, folder_list, session):
-    number_list = os.listdir('e-BioDigit_DB/' + folder_list[0] + '/' + session)
+def get_enrolment_sample(digit, folder_name, session):
+    number_list = os.listdir('e-BioDigit_DB/' + folder_name + '/' + session)
     number_list.sort()
     enrolment_series = []
     user_id = []
@@ -179,7 +179,7 @@ def get_enrolment_sample(digit, folder_list, session):
             user_id.append(id)
             e_digit.append(digit_)
             digit_order.append(order)
-            (x, y, number_of_events, series) = read_file('e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + file_name)
+            (x, y, number_of_events, series) = read_file('e-BioDigit_DB/' + folder_name + '/' + session + '/' + file_name)
             enrolment_series.append(series)
     return (user_id[0], e_digit[0], digit_order[0], enrolment_series)
 
@@ -187,38 +187,39 @@ def get_enrolment_sample(digit, folder_list, session):
 def experimental_protocol(folder_list, session):
     # Creating the files if they are not exist
     create_file()
-    for digit in Digit:
-        number_list = os.listdir('e-BioDigit_DB/' + folder_list[0] + '/' + session)
-        number_list.sort()
-        (user_id, e_digit, digit_order, enrolment_series) = get_enrolment_sample(digit, folder_list, session)
-        # Getting the positive samples
-        for e_file_name in number_list:
-            if digit.name in e_file_name:
-                (x2, y2, number_of_events2, enrolment_series2) = read_file(
-                    'e-BioDigit_DB/' + folder_list[0] + '/' + session + '/' + e_file_name)
-                (user_id2, e_digit2, digit_order2) = split_text(e_file_name)
-                distance_4v1 = 0
+    for folder_name in folder_list:
+        for digit in Digit:
+            number_list = os.listdir('e-BioDigit_DB/' + folder_name + '/' + session)
+            number_list.sort()
+            (user_id, e_digit, digit_order, enrolment_series) = get_enrolment_sample(digit, folder_name, session)
+            # Getting the positive samples
+            for e_file_name in number_list:
+                if digit.name in e_file_name:
+                    (x2, y2, number_of_events2, enrolment_series2) = read_file(
+                        'e-BioDigit_DB/' + folder_name + '/' + session + '/' + e_file_name)
+                    (user_id2, e_digit2, digit_order2) = split_text(e_file_name)
+                    distance_4v1 = 0
+                    for serie in enrolment_series:
+                        distance_4v1 += manual_dtw_calculation(serie, enrolment_series2)
+                    distance = manual_dtw_calculation(enrolment_series[0], enrolment_series2)
+                    write_to_file(user_id, e_digit, digit_order, user_id2, e_digit2, digit_order2, distance, 1)
+                    write_to_file_4v1(user_id, e_digit, user_id2, e_digit2, digit_order2, distance_4v1 / 4, 1)
+            # Getting the negative samples
+            for folder in (folder for folder in folder_list if folder != folder_name):
+                test_files = os.listdir('e-BioDigit_DB/' + folder + '/' + session)
+                for test_file_name in test_files:
+                    if digit.name in test_file_name:
+                        (test_user_id, test_e_digit, test_digit_order) = split_text(test_file_name)
+                        if test_digit_order == 10:
+                            (x, y, number_of_events, test_series) = read_file(
+                                'e-BioDigit_DB/' + folder + '/' + session + '/' + test_file_name)
+                            break
+                distance2_4v1 = 0
                 for serie in enrolment_series:
-                    distance_4v1 += manual_dtw_calculation(serie, enrolment_series2)
-                distance = manual_dtw_calculation(enrolment_series[0], enrolment_series2)
-                write_to_file(user_id, e_digit, digit_order, user_id2, e_digit2, digit_order2, distance, 1)
-                write_to_file_4v1(user_id, e_digit, user_id2, e_digit2, digit_order2, distance_4v1 / 4, 1)
-        # Getting the negative samples
-        for i in range(1, len(folder_list)):
-            test_files = os.listdir('e-BioDigit_DB/' + folder_list[i] + '/' + session)
-            for test_file_name in test_files:
-                if digit.name in test_file_name:
-                    (test_user_id, test_e_digit, test_digit_order) = split_text(test_file_name)
-                    if test_digit_order == 10:
-                        (x, y, number_of_events, test_series) = read_file(
-                            'e-BioDigit_DB/' + folder_list[i] + '/' + session + '/' + test_file_name)
-                        break
-            distance2_4v1 = 0
-            for serie in enrolment_series:
-                distance2_4v1 += manual_dtw_calculation(serie, test_series)
-            distance2 = manual_dtw_calculation(enrolment_series[0], test_series)
-            write_to_file_4v1(user_id, e_digit, test_user_id, test_e_digit, test_digit_order, distance2_4v1 / 4, 0)
-            write_to_file(user_id, e_digit, digit_order, test_user_id, test_e_digit, test_digit_order, distance2, 0)
+                    distance2_4v1 += manual_dtw_calculation(serie, test_series)
+                distance2 = manual_dtw_calculation(enrolment_series[0], test_series)
+                write_to_file_4v1(user_id, e_digit, test_user_id, test_e_digit, test_digit_order, distance2_4v1 / 4, 0)
+                write_to_file(user_id, e_digit, digit_order, test_user_id, test_e_digit, test_digit_order, distance2, 0)
 
 
 class Application(object):
@@ -289,6 +290,7 @@ class Application(object):
         self.compare_session_name.trace('w', self.compare_session_folder_changed)
         self.compare_file_name.trace('w', self.compare_txt_file_changed)
 
+        # it generates 2 files with over 89k lines which takes over 10 minutes, comment the below line if you don't want to regenerate it
         experimental_protocol(self.folder_list, self.session_list[1])
 
         # start the main window
