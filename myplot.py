@@ -6,7 +6,7 @@ from scipy.optimize import brentq
 from sklearn import model_selection, metrics
 
 
-def plot_roc(digitdata, digit):
+def plot_roc(digitdata, digit, result_type):
     labels = digitdata['label']
     scores = digitdata['score']
     # print(labels.shape)
@@ -28,17 +28,16 @@ def plot_roc(digitdata, digit):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC digit ' + str(digit))
+    plt.title('ROC digit ' + str(digit) + ' (' + result_type.name + ')')
     plt.legend(loc="lower right")
     plt.show()
 
 
 # main
-def run():
-    scorefilename = 'result_file.csv'
-    data = pd.read_csv(scorefilename)
+def run(filename, type):
+    data = pd.read_csv(filename)
     print(data.shape)
-    plot_roc(data, 1234567890)
+    plot_roc(data, 1234567890, type)
     for digit in range(0, 10):
         digitdata = data[data['digit'] == digit]
-        plot_roc(digitdata, digit)
+        plot_roc(digitdata, digit, type)

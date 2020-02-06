@@ -2,7 +2,6 @@
 # packages used for dynamic time warping calculations
 import math
 import os
-import sys
 # package used for building user interface
 import tkinter as tk
 from enum import Enum
@@ -34,6 +33,11 @@ class Digit(Enum):
 class FileType(Enum):
     test = 0
     enrollment = 1
+
+
+class ResultType(Enum):
+    exp_4v1 = 0
+    exp_1v1 = 1
 
 
 # 6 dimensional point
@@ -175,13 +179,13 @@ def get_enrolment_sample(digit, folder_name, session):
     # Getting the enrolment sample
     for file_name in number_list:
         if digit.name in file_name:
-            (id, digit_, order) = split_text(file_name)
-            user_id.append(id)
+            (u_id, digit_, order) = split_text(file_name)
+            user_id.append(u_id)
             e_digit.append(digit_)
             digit_order.append(order)
             (x, y, number_of_events, series) = read_file('e-BioDigit_DB/' + folder_name + '/' + session + '/' + file_name)
             enrolment_series.append(series)
-    return (user_id[0], e_digit[0], digit_order[0], enrolment_series)
+    return user_id[0], e_digit[0], digit_order[0], enrolment_series
 
 
 def experimental_protocol(folder_list, session):
@@ -291,7 +295,7 @@ class Application(object):
         self.compare_file_name.trace('w', self.compare_txt_file_changed)
 
         # it generates 2 files with over 89k lines which takes over 10 minutes, comment the below line if you don't want to regenerate it
-        experimental_protocol(self.folder_list, self.session_list[1])
+        # experimental_protocol(self.folder_list, self.session_list[1])
 
         # start the main window
         self.window.mainloop()
@@ -447,4 +451,5 @@ class Application(object):
 
 if __name__ == '__main__':
     Application()
-    myplot.run()
+    myplot.run('result_file.csv', ResultType.exp_1v1)
+    myplot.run('result_file_4v1.csv', ResultType.exp_4v1)
