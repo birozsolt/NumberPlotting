@@ -31,13 +31,35 @@ def plot_roc(digitdata, digit, result_type):
     plt.title('ROC digit ' + str(digit) + ' (' + result_type.name + ')')
     plt.legend(loc="lower right")
     plt.show()
+    return eer
+
+
+def plot_fig(eer, numbers, type):
+    plt.figure()
+    plt.plot(numbers, eer, 'ro-', label='EER1 = %0.4f, EER9= %0.4f' % (max(eer), min(eer)))
+    plt.xlabel('Number of digits of the password')
+    plt.ylabel('EER value (%)')
+    plt.xlim([0, 9])
+    plt.ylim([min(eer) - 5, max(eer) + 5])
+    plt.title('System performance in terms of EER' + '(' + type.name + ')')
+    plt.legend(loc="lower right")
+    plt.show()
 
 
 # main
 def run(filename, type):
     data = pd.read_csv(filename)
-    print(data.shape)
-    plot_roc(data, 1234567890, type)
-    for digit in range(0, 10):
-        digitdata = data[data['digit'] == digit]
-        plot_roc(digitdata, digit, type)
+    # print(data.shape)
+    digitarray = []
+    eerarray = []
+    digitarray.append(0)
+    string = str(0)
+    digitdata = data[data['digit'] == 0]
+    eerarray.append(plot_roc(digitdata, string, type))
+    for digit in range(1, 10):
+        digitarray.append(digit)
+        digitdata = data.loc[data['digit'].isin(digitarray)]
+        string += str(digit)
+        eerarray.append(plot_roc(digitdata, string, type))
+
+    plot_fig([i * 100 for i in eerarray], digitarray, type)
