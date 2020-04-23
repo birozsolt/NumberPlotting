@@ -98,7 +98,9 @@ def calculate_time_series(x, y):
         y_acceleration.append(y_velocity[i] - y_velocity[i - 1])
 
     for i in range(len(normalized_x)):
-        series.append(Point(normalized_x[i], normalized_y[i], x_velocity[i], y_velocity[i], x_acceleration[i], y_acceleration[i]))
+        series.append(Point(normalized_x[i], normalized_y[i],
+                            x_velocity[i], y_velocity[i],
+                            x_acceleration[i], y_acceleration[i]))
     return series
 
 
@@ -183,7 +185,7 @@ def get_enrolment_sample(digit, folder_name, session):
             user_id.append(u_id)
             e_digit.append(digit_)
             digit_order.append(order)
-            (x, y, number_of_events, series) = read_file('e-BioDigit_DB/' + folder_name + '/' + session + '/' + file_name)
+            (x, y, count, series) = read_file('e-BioDigit_DB/' + folder_name + '/' + session + '/' + file_name)
             enrolment_series.append(series)
     return user_id[0], e_digit[0], digit_order[0], enrolment_series
 
@@ -294,7 +296,8 @@ class Application(object):
         self.compare_session_name.trace('w', self.compare_session_folder_changed)
         self.compare_file_name.trace('w', self.compare_txt_file_changed)
 
-        # it generates 2 files with over 89k lines which takes over 10 minutes, comment the below line if you don't want to regenerate it
+        # it generates 2 files with over 89k lines which takes over 10 minutes,
+        # comment the below line if you don't want to regenerate it
         # experimental_protocol(self.folder_list, self.session_list[1])
 
         # start the main window
@@ -451,5 +454,5 @@ class Application(object):
 
 if __name__ == '__main__':
     Application()
-    myplot.run('result_file.csv', ResultType.exp_1v1)
-    myplot.run('result_file_4v1.csv', ResultType.exp_4v1)
+    myplot.run_password_length_test('result_file.csv', ResultType.exp_1v1)
+    myplot.run_password_length_test('result_file_4v1.csv', ResultType.exp_4v1)
